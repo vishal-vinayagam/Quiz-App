@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Quiz App</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+            box-sizing: border-box;
+            background: rgb(238,174,202);
+            background: radial-gradient(circle, rgba(238,174,202,1) 0%, rgba(148,187,233,1) 100%);
+            animation: rotate-bg 10s infinite linear;
+        }
+        @keyframes rotate-bg {
+            0% { background: radial-gradient(circle, rgba(238,174,202,1) 0%, rgba(148,187,233,1) 100%); }
+            50% { background: radial-gradient(circle, rgba(148,187,233,1) 0%, rgba(238,174,202,1) 100%); }
+            100% { background: radial-gradient(circle, rgba(238,174,202,1) 0%, rgba(148,187,233,1) 100%); }
+        }
+        .app {
+            background-color: white;
+            width: 60%;
+            max-width: 500px;
+            margin: 100px auto 0;
+            border-radius: 10px;
+            padding: 30px;
+            transition: transform 0.5s ease;
+            display: none; /* Initially hidden */
+        }
+        .app.show {
+            display: block;
+        }
+        .app h1 {
+            font-size: 45px;
+            color: #001e4d;
+            font-weight: 600;
+            border-bottom: 3px solid black;
+            padding-bottom: 30px;
+        }
+        .quiz {
+            padding: 0 20px;
+        }
+        h2 {
+            font-size: 18px;
+            color: #001e4dd8;
+            font-weight: 600;
+        }
+        .btn {
+            background: white;
+            color: #001e4d;
+            font-weight: 500;
+            width: 100%;
+            border: 1px solid #08409a;
+            padding: 10px;
+            margin: 10px 0;
+            text-align: left;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn:hover:not([disabled]) {
+            background: #203f86;
+            color: white;
+        }
+        .btn:disabled {
+            cursor: no-drop;
+        }
+        #next-btn {
+            background-color: #001e4d;
+            color: white;
+            font-weight: 500;
+            width: 150px;
+            border: 0;
+            padding: 10px;
+            margin: 20px auto 0;
+            border-radius: 5px;
+            cursor: pointer;
+            display: block;
+            display: none;
+        }
+        .correct {
+            background: #1f8f06d4;
+            color: white;
+        }
+        .incorrect {
+            background: #ee1a1ae2;
+            color: white;
+        }
+        .progress-bar {
+            background-color: #e0e0e0;
+            border-radius: 13px;
+            padding: 3px;
+            margin: 20px 0;
+        }
+        .progress {
+            background-color: #001e4d;
+            width: 0;
+            height: 20px;
+            border-radius: 10px;
+        }
+        .timer {
+            font-size: 20px;
+            font-weight: bold;
+            color: #001e4d;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .hint-btn {
+            background-color: #001e4d;
+            color: white;
+            font-weight: 500;
+            width: 150px;
+            border: 0;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .hint-btn:disabled {
+            background-color: #ddd;
+            color: #666;
+            cursor: not-allowed;
+        }
+        .loader-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .loader {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 10px solid #ddd;
+            border-top: 10px solid #1d83ff;
+            animation: spin 2s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="loader-container" id="loader-container">
+        <div class="loader"></div>
+    </div>
+    <div class="app" id="app">
+        <h1>Quiz</h1>
+        <div class="quiz">
+            <div class="timer" id="timer">Time: 10m 0s</div>
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <h2 id="question">question goes here</h2>
+            <div id="answer-buttons">
+                <button class="btn">Answer 1</button>
+                <button class="btn">Answer 2</button>
+                <button class="btn">Answer 3</button>
+                <button class="btn">Answer 4</button>
+            </div>
+            <button class="hint-btn" id="hint-btn" disabled>Hint (-1 point)</button>
+            <button id="next-btn">Next</button>
+        </div>
+    </div>
+
+<script>
+    const questions = [
+    {
+            question: "Which planet is known as the Red Planet?",
+            answers: [
+                { text: "Venus", correct: false },
+                { text: "Mars", correct: true },
+                { text: "Jupiter", correct: false },
+                { text: "Saturn", correct: false },
+            ]
+        },
+        {
+            question: "What is the capital of France?",
+            answers: [
+                { text: "Berlin", correct: false },
+                { text: "Paris", correct: true },
+                { text: "Madrid", correct: false },
+                { text: "Rome", correct: false },
+            ]
+        },
+        {
+            question: "Which is the largest ocean on Earth?",
+            answers: [
+                { text: "Atlantic Ocean", correct: false },
+                { text: "Indian Ocean", correct: false },
+                { text: "Arctic Ocean", correct: false },
+                { text: "Pacific Ocean", correct: true },
+            ]
+        },
+        {
+            question: "What is the chemical symbol for water?",
+            answers: [
+                { text: "O2", correct: false },
+                { text: "H2O", correct: true },
+                { text: "CO2", correct: false },
+                { text: "NaCl", correct: false },
+            ]
+        },
+        {
+            question: "Who wrote 'Romeo and Juliet'?",
+            answers: [
+                { text: "Charles Dickens", correct: false },
+                { text: "Mark Twain", correct: false },
+                { text: "William Shakespeare", correct: true },
+                { text: "J.K. Rowling", correct: false },
+            ]
+        },
+        {
+            question: "Who is the author of 'The Hobbit'?",
+            answers: [
+                { text: "J.R.R. Tolkien", correct: true },
+                { text: "C.S. Lewis", correct: false },
+                { text: "George R.R. Martin", correct: false },
+                { text: "J.D. Salinger", correct: false },
+            ]
+        },
+        {
+            question: "How is your experience with this quiz?",
+            answers: [
+                { text: "Good", correct: false },
+                { text: "Not bad", correct: false },
+                { text: "Excellent", correct: false },
+                { text: "Average", correct: false },
+            ]
+        }
+    ];
+
+    const appElement = document.getElementById("app");
+    const loaderContainer = document.getElementById("loader-container");
+    const questionElement = document.getElementById("question");
+    const answerButtons = document.getElementById("answer-buttons");
+    const nextButton = document.getElementById("next-btn");
+    const timerElement = document.getElementById("timer");
+    const progressElement = document.getElementById("progress");
+    const hintButton = document.getElementById("hint-btn");
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let timer;
+    let totalTimeLeft = 300; // Total time for the quiz in seconds (5 minutes)
+    let hintsUsed = 0;
+
+    function startQuiz() {
+        currentQuestionIndex = 0;
+        score = 0;
+        hintsUsed = 0;
+        nextButton.innerHTML = "Next";
+        hintButton.disabled = false;
+        updateProgress();
+        showQuestion();
+        startTotalTimer();
+    }
+
+    function startTotalTimer() {
+        updateTotalTimer();
+        timer = setInterval(() => {
+            totalTimeLeft--;
+            updateTotalTimer();
+            if (totalTimeLeft === 0) {
+                clearInterval(timer);
+                showScore();
+            }
+        }, 1000);
+    }
+
+    function updateTotalTimer() {
+        const minutes = Math.floor(totalTimeLeft / 60);
+        const seconds = totalTimeLeft % 60;
+        timerElement.innerHTML = `Time: ${minutes}m ${seconds}s`;
+    }
+
+    function showQuestion() {
+        resetState();
+        let currentQuestion = questions[currentQuestionIndex];
+        let questionNo = currentQuestionIndex + 1;
+        questionElement.innerHTML = questionNo + ". " + currentQuestion.question;
+
+        currentQuestion.answers.forEach(answer => {
+            const button = document.createElement("button");
+            button.innerHTML = answer.text;
+            button.classList.add("btn");
+            answerButtons.appendChild(button);
+            if (answer.correct) {
+                button.dataset.correct = answer.correct;
+            }
+            button.addEventListener("click", selectAnswer);
+        });
+    }
+
+    function resetState() {
+        while (answerButtons.firstChild) {
+            answerButtons.removeChild(answerButtons.firstChild);
+        }
+    }
+
+    function selectAnswer(e) {
+        const selectedBtn = e.target;
+        const isCorrect = selectedBtn.dataset.correct === "true";
+        if (isCorrect) {
+            selectedBtn.classList.add("correct");
+            score++;
+        } else {
+            selectedBtn.classList.add("incorrect");
+        }
+        Array.from(answerButtons.children).forEach(button => {
+            if (button.dataset.correct === "true") {
+                button.classList.add("correct");
+            }
+            button.disabled = true;
+        });
+        nextButton.style.display = "block";
+        updateProgress();
+    }
+
+    function showScore() {
+        clearInterval(timer);
+        resetState();
+        questionElement.innerHTML = `You scored ${score} out of ${questions.length-1}!`;
+        nextButton.innerHTML = "Play Again";
+        nextButton.style.display = "block";
+        showSummary();
+    }
+
+    function showSummary() {
+        const summaryElement = document.createElement("div");
+        summaryElement.innerHTML = "<h3>Quiz Summary</h3>";
+        questions.forEach((question, index) => {
+            const questionSummary = document.createElement("p");
+            questionSummary.innerHTML = `${index + 1}. ${question.question} - <strong>${question.answers.find(answer => answer.correct).text}</strong>`;
+            summaryElement.appendChild(questionSummary);
+        });
+        appElement.appendChild(summaryElement);
+    }
+
+    function handleNextButton() {
+        appElement.classList.add("fade-out");
+        setTimeout(() => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                showQuestion();
+            } else {
+                showScore();
+            }
+            appElement.classList.remove("fade-out");
+            appElement.classList.add("fade-in");
+        }, 500);
+    }
+
+    function updateProgress() {
+        const progressPercentage = ((currentQuestionIndex + 1) / questions.length) * 100;
+        progressElement.style.width = `${progressPercentage}%`;
+    }
+
+    function useHint() {
+        if (hintsUsed < 3) { // Allow up to 3 hints
+            score--; // Deduct one point for using a hint
+            hintsUsed++;
+            hintButton.disabled = true;
+            const correctAnswer = questions[currentQuestionIndex].answers.find(answer => answer.correct);
+            alert(`Hint: The correct answer is "${correctAnswer.text}"`);
+        } else {
+            hintButton.disabled = true;
+            alert("No more hints left!");
+        }
+    }
+
+    nextButton.addEventListener("click", () => {
+        if (currentQuestionIndex < questions.length) {
+            handleNextButton();
+        } else {
+            startQuiz();
+        }
+    });
+
+    hintButton.addEventListener("click", useHint);
+
+    // Show loader for 1 second before starting the quiz
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            loaderContainer.style.display = 'none';
+            appElement.classList.add('show');
+            startQuiz();
+        }, 1500);
+    });
+</script>
+</body>
+</html>
